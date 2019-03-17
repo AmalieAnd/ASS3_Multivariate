@@ -35,11 +35,18 @@ P.P.S. Don't forget to motivate your priors.
 P.P.P.S. At least one plot for results and a plot for quality of each model (here and in the next questions) would be appreciated.
 
 ```{r filtering data}
-# only visit 1
+# only visit 1 
 visit1 <- data %>% filter(Visit == 1)
 
 # only visit 1  + only asd
 v1_asd <- filter(data, data$Visit == 1 & data$ASD == 1)
+```
+
+```{r standardising variables}
+v1_asd$ADOS = (v1_asd$ADOS-mean(v1_asd$ADOS, na.rm = T)) / sd(v1_asd$ADOS)
+v1_asd$VerbalIQ = (v1_asd$VerbalIQ-mean(v1_asd$VerbalIQ, na.rm = T)) / sd(v1_asd$VerbalIQ)
+v1_asd$NonVerbalIQ = (v1_asd$NonVerbalIQ-mean(v1_asd$NonVerbalIQ, na.rm = T)) / sd(v1_asd$NonVerbalIQ)
+v1_asd$SocialIQ = (v1_asd$SocialIQ-mean(v1_asd$SocialIQ, na.rm = T)) / sd(v1_asd$SocialIQ)
 ```
 
 
@@ -51,10 +58,6 @@ plot(v1_asd$ADOS ~ v1_asd$VerbalIQ)
 m0 <-  bf(ADOS ~ 1 + VerbalIQ)
 dens (v1_asd$VerbalIQ)
 dens (v1_asd$ADOS)
-
-#Mean centering
-v1_asd$ADOS = (v1_asd$ADOS-mean(v1_asd$ADOS, na.rm = T)) / sd(v1_asd$ADOS)
-v1_asd$VerbalIQ = (v1_asd$VerbalIQ-mean(v1_asd$VerbalIQ, na.rm = T)) / sd(v1_asd$VerbalIQ)
 
 #Getting the priors
 get_prior(m0, v1_asd, family = gaussian)
@@ -131,9 +134,6 @@ plot(v1_asd$ADOS ~ v1_asd$NonVerbalIQ)
 m2 <-  bf(ADOS ~ 1 + NonVerbalIQ)
 dens (v1_asd$NonVerbalIQ) 
 dens (v1_asd$ADOS)
-
-#Mean centering
-v1_asd$NonVerbalIQ = (v1_asd$NonVerbalIQ-mean(v1_asd$NonVerbalIQ, na.rm = T)) / sd(v1_asd$NonVerbalIQ)
 
 #Getting the priors
 get_prior(m2, v1_asd, family = gaussian)
@@ -218,8 +218,6 @@ m3 <-  bf(ADOS ~ 1 + SocialIQ)
 dens (v1_asd$SocialIQ)
 dens (v1_asd$ADOS)
 
-#Mean centering
-v1_asd$SocialIQ = (v1_asd$SocialIQ-mean(v1_asd$SocialIQ, na.rm = T)) / sd(v1_asd$SocialIQ)
 
 #Getting the priors
 get_prior(m3, v1_asd, family = gaussian)

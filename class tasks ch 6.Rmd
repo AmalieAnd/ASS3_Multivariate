@@ -1,0 +1,86 @@
+---
+title: "Class"
+author: "Amalie Lysgaard Andersen"
+date: "26/3/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(rethinking)
+data(Howell1)
+d <- Howell1
+#standardising
+d$age <- (d$age - mean(d$age))/sd(d$age)
+
+set.seed( 1000 )
+i <- sample(1:nrow(d),size=nrow(d)/2)
+d1 <- d[ i , ]
+d2 <- d[ -i , ]
+```
+
+
+# model 1
+m6.1 <- lm( height ~ age, data=d1)
+```{r}
+#  get prior
+m0 <-  bf(ADOS ~ 1 + VerbalIQ)
+dens (v1_asd$VerbalIQ)
+dens (v1_asd$ADOS)
+ 
+#Getting the priors
+get_prior(m0, v1_asd, family = gaussian)
+
+get_prior(m, v1_asd, family = gaussian)
+
+
+#first try
+m6.1 <- map(
+    alist(
+        height ~ dnorm(mu,sigma),
+        mu <- a + b*age,
+        a ~ dnorm(0,20),
+        b ~ dnorm( 0 , 20) ,
+        sigma ~ dunif(0,10)
+        ),
+    data=d1)
+
+precis(m6.1)
+
+# sec try
+flist <-  alist(
+    height ~ dnorm(mu , sigma),
+    mu <- a + b*age ,
+        a ~ dnorm( 150 , 30) ,
+        b ~ dnorm( 0 , 20 ) ,
+        sigma ~ dunif( 0 , 30)
+  )
+m.m0 <- rethinking::map(flist, data = d1)
+m.m0
+```
+
+
+
+#model 2
+m6.2 <- lm( height ~ mass + I(mass^2) , data=d1)
+```{r}
+flist1 <-  alist(
+    height ~ dnorm(mu , sigma),
+    mu <- a + b*age ,
+        a ~ dnorm( 0 , 1 ) ,
+        b ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 1 )
+  )
+```
+
+
+m6.3 <- lm( height ~ mass + I(mass^2) + I(mass^3) , data=d1)
+m6.4 <- lm( height ~ mass + I(mass^2) + I(mass^3) + I(mass^4) , data=d1)
+m6.5 <- lm( height ~ mass + I(mass^2) + I(mass^3) + I(mass^4) + I(mass^5) , data=d1)
+m6.6 <- lm( height ~ mass + I(mass^2) + I(mass^3) + I(mass^4) + I(mass^5) + I(mass^6) , data=d1)
+

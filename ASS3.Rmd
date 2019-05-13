@@ -37,6 +37,7 @@ P.P.P.S. At least one plot for results and a plot for quality of each model (her
 ```{r filtering data}
 # only visit 1 
 visit1 <- data %>% filter(Visit == 1)
+#visit1 <- na.omit(visit1)
 
 # only visit 1  + only asd
 v1_asd <- filter(data, data$Visit == 1 & data$ASD == 1)
@@ -405,10 +406,10 @@ res_normal(m2.1, v1_asd$ADOS, v1_asd$VerbalIQ)
 ```{r all measures - asd+td} 
 #Standardize predictors to a mean of 0 and sd of 1  
 visit1 <- na.omit(visit1)
-visit1$ADOS.s = (visit1$ADOS - mean(visit1$ADOS))/ sd(visit1$ADOS)
-visit1$VerbalIQ.s = (visit1$VerbalIQ - mean(visit1$VerbalIQ, na.rm = T))/sd(visit1$VerbalIQ)
-visit1$NonVerbalIQ.s = (visit1$NonVerbalIQ - mean(visit1$NonVerbalIQ, na.rm = T))/sd(visit1$NonVerbalIQ)
-visit1$SocialIQ.s = (visit1$SocialIQ-mean(visit1$SocialIQ, na.rm = T))/sd(visit1$SocialIQ)
+visit1$ADOS.s <-  (visit1$ADOS - mean(visit1$ADOS))/ sd(visit1$ADOS)
+visit1$VerbalIQ.s <-  (visit1$VerbalIQ - mean(visit1$VerbalIQ, na.rm = T))/sd(visit1$VerbalIQ)
+visit1$NonVerbalIQ.s <-  (visit1$NonVerbalIQ - mean(visit1$NonVerbalIQ, na.rm = T))/sd(visit1$NonVerbalIQ)
+visit1$SocialIQ.s <-  (visit1$SocialIQ-mean(visit1$SocialIQ, na.rm = T))/sd(visit1$SocialIQ)
 
 
 #Model
@@ -421,6 +422,7 @@ flist <-  alist(
         bS ~ dnorm( 0 , 0.5 ) ,
         sigma ~ dunif( 0 , 0.8 )
   )
+
 m3.1 <- rethinking::map(flist, data = visit1)
 precis(m3.1)
 precis_plot( precis(m3.1))
@@ -443,45 +445,64 @@ col=rangi2 )
 #identify( x=visit1$ADOS.s , y=mu.mean , labels=visit1$ChildID , cex=0.8 )
 ```
 
-```{r all measures - interaction effect}
-#Model
-flist <-  alist(
-    ADOS.s ~ dnorm(mu , sigma),
-    mu <- a + bV*VerbalIQ.s + bN*NonVerbalIQ.s + bS*SocialIQ.s ,
-        a ~ dnorm( 0 , 0.5 ) ,
-        bV ~ dnorm( 0 , 0.5 ) ,
-        bN ~ dnorm( 0 , 0.5 ) ,
-        bS ~ dnorm( 0 , 0.5 ) ,
-        sigma ~ dunif( 0 , 0.8 )
-  )
-
-m3.3 <- rethinking::map(flist, data = visit1)
-precis(m3.2)
-precis_plot( precis(m3.2))
- 
-
-####5.11 i Rethinking
-#Link-function to compute mu for each sample from posterior and for each value in the sequence
-mu <- link(m3.2)
-#summarize the across cases
-mu.mean <- apply( mu , 2 , mean )
-mu.HPDI <- apply( mu , 2 , HPDI , prob=0.89 )
-#Plotting (5.12)
-plot( mu.mean ~ visit1$ADOS.s , col= ('black') , ylim=range(mu.HPDI) ,
-xlab="Observed ADOS" , ylab="Predicted ADOS" )
-abline( a=0 , b=1 , lty=2 )
-for ( i in 1:nrow(visit1) )
-lines( rep(visit1$ADOS.s[i],2) , c(mu.HPDI[1,i],mu.HPDI[2,i]) ,
-col=rangi2 )
-#5.13
-#identify( x=visit1$ADOS.s , y=mu.mean , labels=visit1$ChildID , cex=0.8 )
-
+```{r interaction?}
+#trying out interaction effect model. Doesn't work. abandon mission
+flist <- 
+  alist(
+    ADOS ~ dnorm(mu, sigma),
+    mu <- intercept + gamma1*NonVerbalIQ.s + bgroup*ASD + gamma2*VerbalIQ.s + bgroup*ASD + gamma3*SocialIQ.s + bgroup*ASD,
+   
+    gamma1 <- bnon +  binteraction1*ASD,  #nonverbal
+    gamma2 <- bverb + binteraction2*ASD,  #verbal
+    gamma3 <- bsoc +  binteraction3*ASD,  #social
+    
+    intercept ~ dnorm(0, 0.5),
+    
+    bnon ~ dnorm(0, 0.5),
+    bverb ~ dnorm(0, 0.5),
+    bsoc ~ dnorm(0, 0.5),
+    bgroup ~ dnorm(0,1),
+    
+    binteraction1 ~ dnorm(0,1),
+    binteraction2 ~ dnorm(0,1),
+    binteraction3 ~ dnorm(0,1),
+    
+    sigma ~ dnorm(0,0.8)
+    )
+    
+m3.2 <- rethinking:: map(flist, data = visit1)
 ```
-
 
 ```{r residual}
 res_normal(m3.1, v1_asd$ADOS, v1_asd$VerbalIQ)
 ```
+
+```{r interaction?? plot}
+visit1$ASD <- as.factor(visit1$ASD)
+
+#checking with plots 
+pacman::p_load(ggunchained)
+
+p1 <- ggplot(visit1, aes(NonVerbalIQ, ADOS, color = ASD)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "ADOS score by non-verbal IQ for ASD and TD") 
+
+p2 <- ggplot(visit1, aes(VerbalIQ, ADOS, color = ASD)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "ADOS score by verbal IQ for ASD and TD") 
+
+p3 <- ggplot(visit1, aes(SocialIQ, ADOS, color = ASD)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "ADOS score by social IQ for ASD and TD")
+
+p1
+p2
+p3
+```
+
 
 
 ### 4. Let's discuss contents:
